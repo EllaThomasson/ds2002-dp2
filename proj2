@@ -1,5 +1,4 @@
-from pymongo import MongoClient, errors
-from bson.json_util import dumps
+from pymongo import MongoClient
 import os
 import json
 
@@ -13,34 +12,43 @@ collection = db.project
 
 path = "data"
 
-# variable set up
-complete_count = 0
-incomplete_count = 0
-corrupted_count = 0
+successful_imports = 0
+failed_imports = 0
+corrupted_files = 0
 
-# Iterate over files in the directory
-for root, dirs, files in os.walk(path):
+def insert_data(file_data):
+    try:
+        if isinstance(file_data, list):
+            collection.insert_many(file_data)
+        else:
+            collection.insert_one(file_data)
+        return True
+    except Exception as e:
+        print(f"Error inserting data: {e}")
+        return False
+
+for (root, dirs, files) in os.walk(path):
     for filename in files:
-        # Construct full file path
         filepath = os.path.join(root, filename)
         try:
-            # Open each file and load its contents as JSON
             with open(filepath, 'r') as file:
-                file_data = json.load(file)
-                # Insert data into collection
-                if isinstance(file_data, list):  
-                    collection.insert_many(file_data)
-                    complete_count += len(file_data)
-                elif isinstance(file_data, dict):  
-                    collection.insert_one(file_data)
-                    incomplete_count += 1
-                else:
-                    corrupted_count += 1
-        except json.JSONDecodeError:
-            corrupted_count += 1
-        except errors.PyMongoError:
-            corrupted_count += 1
+                try:
+                    file_data = json.load(file)
+                    if insert_data(file_data):
+                        successful_imports += 1
+                    else:
+                        failed_imports += 1
+                except Exception as e:
+                    print(f"Error reading file {filepath}: {e}")
+                    corrupted_files += 1
+        except IOError as e:
+            print(f"Error opening file {filepath}: {e}")
+            corrupted_files += 1
 
-print("Number of complete documents imported:", complete_count)
-print("Number of incomplete documents:", incomplete_count)
-print("Number of corrupted documents:", corrupted_count)
+print(f"Number of successfully imported documents: {successful_imports}")
+print(f"Number of documents that could not be imported: {failed_imports}")
+print(f"Number of corrupted documents: {corrupted_files}")
+
+
+
+
