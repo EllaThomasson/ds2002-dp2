@@ -10,22 +10,6 @@ collection = db.project
 
 path = "data"
 
-successful_imports = 0
-failed_imports = 0
-corrupted_files = 0
-
-def insert_data(file_data):
-    try:
-        if isinstance(file_data, list):
-            collection.insert_many(file_data)
-        else:
-            collection.insert_one(file_data)
-        return True
-    except Exception as e:
-        print(f"Error inserting data: {e}")
-        return False
-
-# for (root, dirs, files) in os.walk(path):
 for filename in os.listdir(path):
     filepath = os.path.join(path, filename)
     try:
@@ -34,12 +18,14 @@ for filename in os.listdir(path):
                 file_data = json.load(file)
                 if isinstance(file_data, list):
                     print(filename)
-                    # collection.insert_many(file_data)
+                    collection.insert_many(file_data)
                 else:
                     print(filename)
-                    # collection.insert_one(file_data)
+                    collection.insert_one(file_data)
+                continue 
             except Exception as e:
                 print(e)
     except Exception as e:
         print(f"Error inserting data: {e}")
 
+print(collection.count_documents({}))
