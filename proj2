@@ -10,32 +10,23 @@ collection = db.project
 
 path = "data"
 
-not_imported = 0
-corrupt = 0
-
 for filename in os.listdir(path):
-    filepath = os.path.join(path, filename)
-    try:
-        with open(filepath, 'r') as file:
-            file_data = json.load(file)
-            if isinstance(file_data, list):
-                print(filename)
-                try:
-                    collection.insert_many(file_data)
-                except Exception as e:
-                    print(f"Error inserting data from {filename}: {e}")
-                    not_imported += 1
-            else:
-                print(filename)
-                try:
-                    collection.insert_one(file_data)
-                except Exception as e:
-                    print(f"Error inserting data from {filename}: {e}")
-                    not_imported += 1
-    except Exception as e:
-        print(f"Error opening file {filepath}: {e}")
-        corrupt += 1
+   filepath = os.path.join(path, filename)
+   try:
+       with open(filepath, 'r') as file:
+           try:
+               file_data = json.load(file)
+               if isinstance(file_data, list):
+                   print(filename)
+                   collection.insert_many(file_data)
+               else:
+                   print(filename)
+                   collection.insert_one(file_data)
+               continue
+           except Exception as e:
+               print(e)
+   except Exception as e:
+       print(f"Error inserting data: {e}")
+
 
 print(collection.count_documents({}))
-print(corrupt)
-print(not_imported)
